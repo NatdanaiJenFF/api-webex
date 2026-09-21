@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>จองห้องประชุมทางไกล</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EEF3F5;
+    --panel: #FFFFFF;
+    --ink: #16232C;
+    --muted: #5E6E78;
+    --line: #D9E1E5;
+    --vacant: #94A2AA;
+    --active: #0F7A6B;
+    --active-soft: #E1F2EE;
+    --alert: #BD4128;
+    --alert-soft: #FBEAE5;
+    --led-bg: #17262E;
+    --led-fg: #F5B143;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    background-image: radial-gradient(circle at 1px 1px, rgba(22,35,44,0.05) 1px, transparent 0);
+    background-size: 22px 22px;
+    padding: 28px 16px;
+    font-family: "IBM Plex Sans Thai", sans-serif;
+    color: var(--ink);
+    font-size: 16px;
+  }
+
+  .panel {
+    width: 100%;
+    max-width: 440px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 14px 30px rgba(22, 35, 44, 0.08);
+    padding: 30px 26px 34px;
+  }
+
+  .status-strip {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 20px;
+  }
+
+  .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--vacant);
+    transition: background 0.4s ease, box-shadow 0.4s ease;
+    flex-shrink: 0;
+  }
+  .dot.booked { background: var(--active); box-shadow: 0 0 0 5px var(--active-soft); }
+  .dot.alert { background: var(--alert); box-shadow: 0 0 0 5px var(--alert-soft); }
+  .dot.pending { animation: pulse 1.1s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .dot.pending { animation: none; } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .status-text { font-size: 14px; font-weight: 500; color: var(--muted); }
+
+  h1 { font-size: 23px; font-weight: 700; margin: 0 0 7px; letter-spacing: -0.01em; }
+
+  .lede { font-size: 14.5px; color: var(--muted); margin: 0 0 22px; line-height: 1.6; }
+
+  hr.rule { border: none; border-top: 1px solid var(--line); margin: 0 0 24px; }
+
+  label { display: block; font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+
+  .field { margin-bottom: 20px; }
+  .field-row { display: flex; gap: 14px; }
+  .field-row .field { flex: 1; }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+
+  input[type="text"], input[type="date"], input[type="time"] {
+    width: 100%;
+    padding: 12px 13px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    background: #FBFCFD;
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    min-height: 48px;
+  }
+  input::placeholder { color: #9AA6AC; }
+  input:focus-visible {
+    outline: none;
+    border-color: var(--active);
+    box-shadow: 0 0 0 3px var(--active-soft);
+  }
+
+  .duration-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .duration-chip {
+    flex: 1;
+    min-width: 70px;
+    min-height: 46px;
+    border: 1.5px solid var(--line);
+    background: #FBFCFD;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+  .duration-chip:hover { border-color: var(--active); }
+  .duration-chip.selected {
+    background: var(--active);
+    border-color: var(--active);
+    color: #fff;
+  }
+  .duration-chip:focus-visible { outline: 2px solid var(--active); outline-offset: 2px; }
+
+  button[type="submit"] {
+    width: 100%;
+    margin-top: 8px;
+    padding: 15px;
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    min-height: 52px;
+    transition: background 0.15s ease;
+  }
+  button[type="submit"]:hover:not(:disabled) { background: #2C3D48; }
+  button[type="submit"]:disabled { background: #B7C1C7; cursor: not-allowed; }
+  button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .edit-cancel-link {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin-top: 12px;
+    padding: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: underline;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  .edit-cancel-link[hidden] { display: none; }
+
+  .outcome { margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .outcome[hidden] { display: none; }
+
+  .outcome-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14.5px;
+    margin-bottom: 9px;
+  }
+  .outcome-row .k { color: var(--muted); }
+  .outcome-row .v { font-weight: 600; text-align: right; }
+
+  .join-btn {
+    display: block;
+    text-align: center;
+    margin-top: 16px;
+    padding: 14px;
+    background: var(--active);
+    color: #fff !important;
+    text-decoration: none;
+    border-radius: 9px;
+    font-weight: 700;
+    font-size: 16px;
+    min-height: 50px;
+    line-height: 22px;
+  }
+  .join-btn:hover { background: #0C6558; }
+
+  .room-code {
+    margin-top: 16px;
+    text-align: center;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--led-fg);
+    background: var(--led-bg);
+    border-radius: 8px;
+    padding: 14px;
+  }
+
+  .note { margin-top: 10px; font-size: 13px; color: var(--muted); text-align: center; }
+
+  .link-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .link-text {
+    flex: 1;
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    background: #FBFCFD;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .copy-btn {
+    min-height: 42px;
+    padding: 0 16px;
+    border: 1.5px solid var(--line);
+    background: #fff;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .copy-btn:hover { border-color: var(--active); color: var(--active); }
+  .copy-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .secondary-btn {
+    flex: 1;
+    min-height: 44px;
+    border: 1.5px solid var(--line);
+    background: #fff;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .secondary-btn:hover:not(:disabled) { border-color: var(--ink); }
+  .secondary-btn.danger { color: var(--alert); }
+  .secondary-btn.danger:hover:not(:disabled) { border-color: var(--alert); background: var(--alert-soft); }
+  .secondary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .secondary-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .outcome.error .outcome-message {
+    font-size: 14.5px;
+    color: var(--alert);
+    background: var(--alert-soft);
+    border-radius: 8px;
+    padding: 14px;
+    margin: 0;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<main class="panel">
+  <div class="status-strip">
+    <span class="dot" id="statusDot"></span>
+    <span class="status-text" id="statusText">ห้องว่าง</span>
+  </div>
+
+  <h1>จองห้องประชุมทางไกล</h1>
+  <p class="lede">สำหรับบุคลากรโรงพยาบาล กรอกข้อมูลแล้วกดจอง ระบบจะเปิดห้องให้ทันที</p>
+  <hr class="rule" />
+
+  <form id="meetingForm">
+    <div class="field">
+      <label for="title">หัวข้อการประชุม</label>
+      <input type="text" id="title" placeholder="เช่น ปรึกษาแผนการรักษา ผู้ป่วยเตียง 12" required />
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="date">วันที่</label>
+        <input type="date" id="date" required />
+      </div>
+      <div class="field">
+        <label for="startTime">เวลาเริ่ม</label>
+        <input type="time" id="startTime" required />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="durationGroup">ระยะเวลา</label>
+      <div class="duration-group" id="durationGroup" role="group" aria-label="เลือกระยะเวลาประชุม">
+        <button type="button" class="duration-chip" data-minutes="15">15 นาที</button>
+        <button type="button" class="duration-chip selected" data-minutes="30">30 นาที</button>
+        <button type="button" class="duration-chip" data-minutes="45">45 นาที</button>
+        <button type="button" class="duration-chip" data-minutes="60">60 นาที</button>
+      </div>
+      <p class="hint">ระบบจะคำนวณเวลาจบให้อัตโนมัติ ไม่ต้องกรอกเอง</p>
+    </div>
+
+    <div class="field">
+      <label for="invitees">อีเมลผู้ร่วมปรึกษา (ไม่บังคับ)</label>
+      <input type="text" id="invitees" placeholder="person1@example.com, person2@example.com" />
+    </div>
+
+    <button type="submit" id="submitBtn">จองห้องประชุม</button>
+    <button type="button" id="cancelEditBtn" class="edit-cancel-link" hidden>ยกเลิกการแก้ไข กลับไปดูห้องที่จองไว้</button>
+  </form>
+
+  <div class="outcome" id="result" hidden></div>
+</main>
+
+<script>
+  const form = document.getElementById('meetingForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
+  const resultBox = document.getElementById('result');
+  const statusDot = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+  const durationChips = document.querySelectorAll('.duration-chip');
+
+  let selectedDuration = 30;
+  let currentMeeting = null; // ห้องประชุมล่าสุดที่จอง/แก้ไขไว้ในเซสชันนี้
+  let isEditing = false;
+
+  durationChips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      durationChips.forEach((c) => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      selectedDuration = Number(chip.dataset.minutes);
+    });
+  });
+
+  function resetDurationChips() {
+    durationChips.forEach((c) => c.classList.toggle('selected', c.dataset.minutes === '30'));
+    selectedDuration = 30;
+  }
+
+  function toIsoWithThailandOffset(dateStr, timeStr) {
+    return `${dateStr}T${timeStr}:00+07:00`;
+  }
+
+  function toThaiDate(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  function addMinutes(timeStr, minutesToAdd) {
+    const [h, m] = timeStr.split(':').map(Number);
+    const total = (h * 60 + m + minutesToAdd) % 1440;
+    const newH = String(Math.floor(total / 60)).padStart(2, '0');
+    const newM = String(total % 60).padStart(2, '0');
+    return `${newH}:${newM}`;
+  }
+
+  function setStatus(state, label) {
+    statusDot.className = 'dot' + (state ? ' ' + state : '');
+    statusText.textContent = label;
+  }
+
+  // คำนวณเวลาปัจจุบันแบบ Asia/Bangkok (+07:00) ตรงๆ โดยไม่พึ่ง timezone ของเครื่อง
+  // เพราะถ้าเครื่องตั้ง timezone ไม่ตรงกับไทย การหยิบ getHours()/getMinutes() ของเครื่องตรงๆ จะทำให้เวลาเพี้ยน
+  function getBangkokNow() {
+    return new Date(Date.now() + 7 * 60 * 60 * 1000);
+  }
+
+  function applyDefaultDateTime() {
+    const now = getBangkokNow();
+    now.setUTCMinutes(now.getUTCMinutes() + 15);
+    const pad = (n) => String(n).padStart(2, '0');
+    document.getElementById('date').value =
+      `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}`;
+    document.getElementById('startTime').value = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
+  }
+  window.addEventListener('DOMContentLoaded', applyDefaultDateTime);
+
+  function renderOutcome(meeting) {
+    resultBox.hidden = false;
+    resultBox.className = 'outcome success';
+    resultBox.innerHTML = `
+      <div class="outcome-row"><span class="k">หัวข้อ</span><span class="v">${meeting.title}</span></div>
+      <div class="outcome-row"><span class="k">วันที่</span><span class="v">${toThaiDate(meeting.date)}</span></div>
+      <div class="outcome-row"><span class="k">เวลา</span><span class="v">${meeting.startTime} - ${meeting.endTime} น.</span></div>
+      <a class="join-btn" href="${meeting.webLink}" target="_blank" rel="noopener">เข้าร่วมประชุม</a>
+      <div class="link-row">
+        <input type="text" class="link-text" id="linkText" value="${meeting.webLink}" readonly />
+        <button type="button" class="copy-btn" id="copyLinkBtn">คัดลอก</button>
+      </div>
+      <div class="room-code">${meeting.meetingNumber || '-'}</div>
+      <div class="note">${meeting.password ? 'รหัสผ่าน: ' + meeting.password : 'ไม่ต้องใช้รหัสผ่าน กดลิงก์เข้าได้ทันที'}</div>
+      <div class="note">${meeting.lineNotified ? 'ส่งแจ้งเตือนไปที่ LINE แล้ว' : 'ยังไม่ได้ตั้งค่าแจ้งเตือน LINE'}</div>
+      <div class="action-row">
+        <button type="button" class="secondary-btn" id="editBtn">แก้ไขห้องประชุม</button>
+        <button type="button" class="secondary-btn danger" id="cancelMeetingBtn">ยกเลิกห้องประชุม</button>
+      </div>
+    `;
+    document.getElementById('editBtn').addEventListener('click', startEdit);
+    document.getElementById('cancelMeetingBtn').addEventListener('click', handleCancelMeeting);
+
+    const copyBtn = document.getElementById('copyLinkBtn');
+    const linkInput = document.getElementById('linkText');
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(meeting.webLink);
+      } catch (err) {
+        linkInput.select();
+        document.execCommand('copy');
+      }
+      const original = copyBtn.textContent;
+      copyBtn.textContent = 'คัดลอกแล้ว';
+      setTimeout(() => { copyBtn.textContent = original; }, 1500);
+    });
+  }
+
+  function startEdit() {
+    if (!currentMeeting) return;
+    document.getElementById('title').value = currentMeeting.title;
+    document.getElementById('date').value = currentMeeting.date;
+    document.getElementById('startTime').value = currentMeeting.startTime;
+    durationChips.forEach((c) => {
+      c.classList.toggle('selected', Number(c.dataset.minutes) === currentMeeting.duration);
+    });
+    selectedDuration = currentMeeting.duration;
+    isEditing = true;
+    submitBtn.textContent = 'บันทึกการแก้ไข';
+    cancelEditBtn.hidden = false;
+    resultBox.hidden = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  cancelEditBtn.addEventListener('click', () => {
+    isEditing = false;
+    submitBtn.textContent = 'จองห้องประชุม';
+    cancelEditBtn.hidden = true;
+    if (currentMeeting) renderOutcome(currentMeeting);
+  });
+
+  async function handleCancelMeeting() {
+    if (!currentMeeting) return;
+    const ok = window.confirm(`ยืนยันยกเลิกห้องประชุม "${currentMeeting.title}" ?`);
+    if (!ok) return;
+
+    const cancelBtn = document.getElementById('cancelMeetingBtn');
+    cancelBtn.disabled = true;
+    cancelBtn.textContent = 'กำลังยกเลิก...';
+
+    try {
+      const res = await fetch(`/api/meetings/${currentMeeting.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: currentMeeting.title }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        currentMeeting = null;
+        isEditing = false;
+        cancelEditBtn.hidden = true;
+        submitBtn.textContent = 'จองห้องประชุม';
+        form.reset();
+        applyDefaultDateTime();
+        resetDurationChips();
+        setStatus('', 'ห้องว่าง');
+        resultBox.hidden = false;
+        resultBox.className = 'outcome';
+        resultBox.innerHTML = `<div class="note" style="margin-top:0;">ยกเลิกห้องประชุมแล้ว</div>`;
+      } else {
+        alert(data.error || 'ยกเลิกไม่สำเร็จ');
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = 'ยกเลิกห้องประชุม';
+      }
+    } catch (err) {
+      alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
+      cancelBtn.disabled = false;
+      cancelBtn.textContent = 'ยกเลิกห้องประชุม';
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const title = document.getElementById('title').value.trim();
+    const date = document.getElementById('date').value;
+    const startTime = document.getElementById('startTime').value;
+    const endTime = addMinutes(startTime, selectedDuration);
+    const inviteesRaw = document.getElementById('invitees').value.trim();
+
+    const invitees = inviteesRaw
+      ? inviteesRaw.split(',').map((v) => v.trim()).filter(Boolean)
+      : [];
+
+    const startIso = toIsoWithThailandOffset(date, startTime);
+    const endIso = toIsoWithThailandOffset(date, endTime);
+    const isUpdate = isEditing && currentMeeting;
+
+    if (new Date(startIso).getTime() < Date.now() + 60000) {
+      setStatus('alert', isUpdate ? 'บันทึกไม่สำเร็จ' : 'จองไม่สำเร็จ');
+      resultBox.hidden = false;
+      resultBox.className = 'outcome error';
+      resultBox.innerHTML = `<p class="outcome-message">เวลาที่เลือกผ่านไปแล้ว กรุณาเลือกวันเวลาที่ยังไม่ถึง</p>`;
+      return;
+    }
+
+    const payload = { title, start: startIso, end: endIso, invitees };
+    const url = isUpdate ? `/api/meetings/${currentMeeting.id}` : '/api/meetings';
+    const method = isUpdate ? 'PUT' : 'POST';
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = isUpdate ? 'กำลังบันทึก...' : 'กำลังจอง...';
+    setStatus('pending', isUpdate ? 'กำลังบันทึก...' : 'กำลังจอง...');
+    resultBox.hidden = true;
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        currentMeeting = {
+          id: data.meetingId,
+          title,
+          date,
+          startTime,
+          endTime,
+          duration: selectedDuration,
+          webLink: data.webLink,
+          meetingNumber: data.meetingNumber,
+          password: data.password,
+          lineNotified: data.lineNotified,
+        };
+        isEditing = false;
+        cancelEditBtn.hidden = true;
+        setStatus('booked', isUpdate ? 'แก้ไขสำเร็จ' : 'จองสำเร็จ');
+        renderOutcome(currentMeeting);
+      } else {
+        setStatus('alert', isUpdate ? 'บันทึกไม่สำเร็จ' : 'จองไม่สำเร็จ');
+        resultBox.hidden = false;
+        resultBox.className = 'outcome error';
+        resultBox.innerHTML = `<p class="outcome-message">${data.error || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ'}</p>`;
+      }
+    } catch (err) {
+      setStatus('alert', isUpdate ? 'บันทึกไม่สำเร็จ' : 'จองไม่สำเร็จ');
+      resultBox.hidden = false;
+      resultBox.className = 'outcome error';
+      resultBox.innerHTML = `<p class="outcome-message">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจสอบว่า server.js กำลังรันอยู่หรือไม่</p>`;
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = isEditing ? 'บันทึกการแก้ไข' : 'จองห้องประชุม';
+    }
+  });
+</script>
+
+</body>
+</html>

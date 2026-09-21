@@ -1,0 +1,14 @@
+{
+  "name": "webex-meeting-demo",
+  "version": "1.0.0",
+  "description": "ตัวอย่างระบบสร้างห้องประชุม Webex ผ่าน REST API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
